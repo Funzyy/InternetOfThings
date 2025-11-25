@@ -58,8 +58,27 @@ const MapScreen = () => {
                         </Popup>
                     </Marker>
 
-                    {/* Route Line */}
-                    <Polyline positions={bus.stops.map(s => [s.lat, s.lng])} color={bus.color} />
+                    {/* Route Lines - support multiple routes (e.g., outbound and return) */}
+                    {bus.routeGeometries ? (
+                        // Multiple routes (don't connect them)
+                        bus.routeGeometries.map((geometry, idx) => (
+                            <Polyline
+                                key={idx}
+                                positions={geometry}
+                                color={bus.color}
+                                weight={4}
+                                opacity={0.7}
+                            />
+                        ))
+                    ) : (
+                        // Single route or fallback to stops
+                        <Polyline
+                            positions={bus.routeGeometry || bus.stops.map(s => [s.lat, s.lng])}
+                            color={bus.color}
+                            weight={4}
+                            opacity={0.7}
+                        />
+                    )}
                 </MapContainer>
             </div>
         </div>
