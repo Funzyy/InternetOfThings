@@ -32,7 +32,6 @@ def get_bus_id_from_line(cur,):
 def get_next_stops(cur, next_stop_id,):
     cur.execute("select sequenc_order from LineStops where fk_stop_id=%s", (next_stop_id))
     next_stop_order = cur.fetchone()
-    cur(dictionary=True)
     cur.execute("select * from LineStops where sequenc_order>=%s", (next_stop_order[0]))
     next_stops = cur.fetchall()
     return next_stops if next_stops else None
