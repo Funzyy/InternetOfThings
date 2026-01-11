@@ -21,6 +21,12 @@ def get_latest_bus_gps(cur, bus_id):
     row = cur.fetchone()
     return row if row else None
 # get person gps
-# get line info
+
+def get_bus_id_from_line(cur,):
+    cur.execute("select id from BusLine where line_name=1407")
+    line = cur.fetchone()
+    cur.execute("select * from Bus where fk_line_id=%s", (line[0]))
+    bus = cur.fetchone()
+    return bus if bus else None
 # get next bus stops from line_stop_order
 # 
