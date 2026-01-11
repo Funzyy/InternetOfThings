@@ -19,7 +19,7 @@ def connect_db():
 def get_latest_bus_gps(cur, bus_id):
     cur.execute("select * from BusPosition where fk_bus_id=%s desc", (bus_id))
     row = cur.fetchone()
-    return row[0] if row else None
+    return row if row else None
 # get person gps
 # get line info
 # get next bus stops from line_stop_order
