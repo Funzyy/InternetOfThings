@@ -32,4 +32,27 @@ def get_next_stops(cur, next_stop_id,):
     next_stop_order = cur.fetchone()
     cur.execute("select * from LineStops where sequenc_order>=%s order by sequenc_order", (next_stop_order[0],))
     return cur.fetchall()
-# missing main prob?
+
+def get_api_gps_data():
+    conn = connect_db()
+    cur = conn.cursor(dictionary = True)
+
+    bus = get_bus_from_line(cur, "1407") ## hardcoded for now
+    if not bus:
+        return None
+    
+    bus_gps = get_latest_bus_gps(cur, bus["id"])
+    if not bus_gps:
+        return None
+    
+    next_stops = get_next_stops(cur, bus["next_stop"])
+    if not next_stops:
+        return None
+    
+    conn.close()
+
+    return {
+        "bus": bus,
+        "bus_gps": bus_gps,
+        "next_stops": next_stops,
+    }
