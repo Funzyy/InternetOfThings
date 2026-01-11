@@ -34,5 +34,5 @@ def get_next_stops(cur, next_stop_id,):
     next_stop_order = cur.fetchone()
     cur.execute("select * from LineStops where sequenc_order>=%s", (next_stop_order[0]))
     next_stops = cur.fetchall()
-    return next_stops
+    return next_stops if next_stops else None
 # 
