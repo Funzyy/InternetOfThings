@@ -17,7 +17,7 @@ def connect_db():
     return mysql.connector.connect(**DB)
 
 def get_latest_bus_gps(cur, bus_id):
-    cur.execute("select * from BusPosition where fk_bus_id=%s desc", (bus_id))
+    cur.execute("select * from BusPosition where fk_bus_id=%s order by gps_send_at desc", (bus_id))
     row = cur.fetchone()
     return row if row else None
 # get person gps
