@@ -21,7 +21,7 @@ def get_latest_bus_gps(cur, bus_id):
     return cur.fetchone()
 # get person gps
 
-def get_bus_id_from_line(cur,):
+def get_bus_from_line(cur,):
     cur.execute("select id from BusLine where line_name=1407")
     line = cur.fetchone()
     cur.execute("select * from Bus where fk_line_id=%s", (line[0],))
