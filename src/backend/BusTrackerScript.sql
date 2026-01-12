@@ -1,5 +1,5 @@
 -- Schema
-drop database if exists BusTracker;
+-- drop database if exists BusTracker;
 create database if not exists BusTracker;
 use BusTracker;
 -- ----------

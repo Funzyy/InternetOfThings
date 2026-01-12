@@ -6,7 +6,7 @@ from mysql.connector import Error
 
 from db_init import init_db  # ggf. Import-Pfad anpassen
 
-RPI_LAST_URL = "http://10.242.135.163:5000/last"
+RPI_LAST_URL = "http://10.219.232.163:5000/last"
 POLL_SEC = 1
 
 DB = {
