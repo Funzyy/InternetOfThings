@@ -7,7 +7,7 @@ export function useGeolocation(options = { enableHighAccuracy: true, maximumAge:
 
     useEffect(() => {
         if (!isSupported) {
-            setError("Geolocation wird vom Browser nicht unterstützt.");
+            setError("Geolocation is not supported by the browser.");
             return;
         }
 
@@ -25,7 +25,7 @@ export function useGeolocation(options = { enableHighAccuracy: true, maximumAge:
                 setError(null);
             },
             (err) => {
-                setError(err.message || "Standort konnte nicht abgerufen werden.");
+                setError(err.message || "Location could not be retrieved.");
             },
             options
         );
