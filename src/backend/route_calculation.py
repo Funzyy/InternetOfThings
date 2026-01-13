@@ -1,7 +1,6 @@
 import time
 import requests
 import mysql.connector
-from mysql.connector import Error
 
 from db_init import init_db  # ggf. Import-Pfad anpassen
 
