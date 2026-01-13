@@ -8,8 +8,8 @@ from db_init import init_db  # ggf. Import-Pfad anpassen
 DB = {
     "host": "127.0.0.1",
     "user": "root",
-    "password": "maigoroot",
-    "database": "BusTracker",
+    "password": "root",
+    "database": "bustracker",
     "port": 3306,
 }
 
