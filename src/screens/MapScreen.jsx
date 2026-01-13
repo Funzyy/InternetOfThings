@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import { busLines } from '../data/busData';
@@ -6,9 +6,11 @@ import 'leaflet/dist/leaflet.css';
 import './MapScreen.css';
 import L from 'leaflet';
 
-// Fix for default marker icon in React Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+import userIconImage from '../icons/userIconImage.png';
+import { useGeolocation } from '../hooks/useGeolocation.js';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -17,17 +19,28 @@ let DefaultIcon = L.icon({
     iconAnchor: [12, 41]
 });
 
+let userIcon = L.icon({
+    iconUrl: userIconImage,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+});
+
 L.Marker.prototype.options.icon = DefaultIcon;
 
 const MapScreen = () => {
     const { id } = useParams();
     const bus = busLines.find(b => b.id === parseInt(id));
 
+    const { position: userPos } = useGeolocation();
+
     if (!bus) {
         return <div>Bus line not found</div>;
     }
 
-    const center = [bus.currentPosition.lat, bus.currentPosition.lng];
+    const center = userPos
+        ? [userPos.lat, userPos.lng]
+        : [bus.currentPosition.lat, bus.currentPosition.lng];
 
     return (
         <div className="map-screen-container">
@@ -45,11 +58,15 @@ const MapScreen = () => {
                     {/* Stops */}
                     {bus.stops.map(stop => (
                         <Marker key={stop.id} position={[stop.lat, stop.lng]}>
-                            <Popup>
-                                {stop.name}
-                            </Popup>
+                            <Popup>{stop.name}</Popup>
                         </Marker>
                     ))}
+
+                    {userPos && (
+                        <Marker position={[userPos.lat, userPos.lng]} icon={userIcon}>
+                            <Popup>User Position</Popup>
+                        </Marker>
+                    )}
 
                     {/* Current Bus Position */}
                     <Marker position={[bus.currentPosition.lat, bus.currentPosition.lng]}>
