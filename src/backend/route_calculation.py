@@ -1,3 +1,5 @@
+from enum import nonmember
+
 import mysql.connector
 
 from db_init import init_db  # ggf. Import-Pfad anpassen
@@ -16,7 +18,10 @@ def connect_db():
 def get_latest_bus_gps(cur, bus_id):
     cur.execute("select * from BusPosition where fk_bus_id=%s order by gps_send_at desc limit 1", (bus_id,))
     return cur.fetchone()
-# get person gps
+
+def get_person_gps(cur, person_id):
+    cur.execute("select * from PersonGPS where id=%s limit 1", (person_id,))
+    return cur.fetchone()
 
 def get_bus_from_line(cur, line_name):
     cur.execute("select id from BusLine where line_name=%s limit 1", (line_name,))
@@ -30,14 +35,18 @@ def get_next_stops(cur, next_stop_id,):
     cur.execute("select * from LineStops where sequenc_order>=%s order by sequenc_order", (next_stop_order["sequenc_order"],))
     return cur.fetchall()
 
-def get_api_gps_data():
+def get_api_gps_data(test_person_id):
     conn = connect_db()
     cur = conn.cursor(dictionary = True)
 
     bus = get_bus_from_line(cur, "1407") ## hardcoded for now
     if not bus:
         return None
-    
+
+    person = get_person_gps(cur, test_person_id)
+    if not person:
+        return None
+
     bus_gps = get_latest_bus_gps(cur, bus["id"])
     if not bus_gps:
         return None
@@ -50,6 +59,7 @@ def get_api_gps_data():
 
     return {
         "bus": bus,
+        "person": person,
         "bus_gps": bus_gps,
         "next_stops": next_stops,
     }
