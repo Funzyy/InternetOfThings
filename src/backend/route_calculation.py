@@ -41,19 +41,19 @@ def get_api_gps_data(test_bus_id, test_person_id):
 
     bus = get_bus_from_line(cur, "1407") ## hardcoded for now
     if not bus:
-        return None
+        return print("Bus null"), None
 
     person = get_person_gps(cur, test_person_id)
     if not person:
-        return None
+        return print("Person null"), None
 
-    bus_gps = get_latest_bus_gps(cur, bus["id"])
+    bus_gps = get_latest_bus_gps(cur, test_bus_id)
     if not bus_gps:
-        return None
+        return print("Bus GPS null"), None
     
     next_stops = get_next_stops(cur, bus["next_stop"])
     if not next_stops:
-        return None
+        return print("Next stop null"), None
     
     conn.close()
 
