@@ -35,7 +35,7 @@ def get_next_stops(cur, next_stop_id,):
     cur.execute("select * from LineStops where sequenc_order>=%s order by sequenc_order", (next_stop_order["sequenc_order"],))
     return cur.fetchall()
 
-def get_api_gps_data(test_person_id):
+def get_api_gps_data(test_bus_id, test_person_id):
     conn = connect_db()
     cur = conn.cursor(dictionary = True)
 
