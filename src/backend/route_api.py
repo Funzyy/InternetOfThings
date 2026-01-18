@@ -16,7 +16,7 @@ ors_api_url_bus = "https://api.openrouteservice.org/v2/matrix/driving-hgv"
 ors_api_url_person = "https://api.openrouteservice.org/v2/matrix/foot-walking"
 max_stops = 5
 
-def builld_header():
+def build_header():
     headers = {
         "Accept": "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
         "Authorization": ors_api_key,
