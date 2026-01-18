@@ -47,9 +47,13 @@ def get_api_gps_data(test_bus_id, test_person_id):
     if not bus_gps:
         return print("Bus GPS null"), None
     
-    next_stops = get_next_stops(cur, bus["next_stop"])
-    if not next_stops:
+    next_stops_ids = get_next_stops(cur, bus["next_stop"])
+    if not next_stops_ids:
         return print("Next stop null"), None
+
+    next_stops_gps = get_next_stops_gps(cur, next_stops_ids)
+    if not next_stops_gps:
+        return print("Next stop GPS null"), None
     
     conn.close()
 
@@ -57,5 +61,5 @@ def get_api_gps_data(test_bus_id, test_person_id):
         "bus": bus,
         "person": person,
         "bus_gps": bus_gps,
-        "next_stops": next_stops,
+        "next_stops": next_stops_gps,
     }
