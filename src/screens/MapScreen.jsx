@@ -21,6 +21,23 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Helper to create a rotated arrow icon
+const createArrowIcon = (heading) => {
+    return L.divIcon({
+        className: 'custom-arrow-icon',
+        html: `
+            <div style="transform: rotate(${heading}deg); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#4285F4" stroke="white" stroke-width="2"/>
+                <path d="M12 4L19 20L12 16L5 20L12 4Z" fill="white"/>
+             </svg>
+            </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+    });
+};
+
 // Helper component to center map when position changes
 const RecenterAutomatically = ({ lat, lng }) => {
     const map = useMap();
@@ -60,7 +77,11 @@ const MapScreen = () => {
             worker.onmessage = (e) => {
                 const { type, payload } = e.data;
                 if (type === 'POSITION_UPDATE') {
-                    setSimulatedPosition({ lat: payload.lat, lng: payload.lon });
+                    setSimulatedPosition({
+                        lat: payload.lat,
+                        lng: payload.lon,
+                        heading: payload.heading
+                    });
                 }
             };
         }
@@ -79,6 +100,11 @@ const MapScreen = () => {
     // Use simulated position if available, otherwise static
     const currentPos = simulatedPosition || bus.currentPosition;
     const center = [currentPos.lat, currentPos.lng];
+
+    // Determine icon: Simulated gets arrow, Static gets default
+    const markerIcon = simulatedPosition
+        ? createArrowIcon(simulatedPosition.heading || 0)
+        : DefaultIcon;
 
     return (
         <div className="map-screen-container">
@@ -105,7 +131,8 @@ const MapScreen = () => {
                     ))}
 
                     {/* Current Bus Position */}
-                    <Marker position={[currentPos.lat, currentPos.lng]}>
+                    {/* Current Bus Position */}
+                    <Marker position={[currentPos.lat, currentPos.lng]} icon={markerIcon}>
                         <Popup>
                             Current Position
                             {simulatedPosition && <br />}
