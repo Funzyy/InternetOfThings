@@ -21,3 +21,17 @@ def builld_header():
         "Authorization": ors_api_key,
         "Content-Type": "application/json; charset=utf-8"
     }
+
+def api_call(url, header, body):
+    response = requests.post(
+        url,
+        json=body,
+        headers=header)
+    print("Dumping plain text response:", response.text)
+    return {
+        "status": response.status_code,
+        "data": response.json(),
+    }
+
+
+
