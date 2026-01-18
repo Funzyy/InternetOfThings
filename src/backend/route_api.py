@@ -3,14 +3,6 @@ from email.quoprimime import body_check
 import route_calculation
 import requests
 
-# komplet neu machen für ors
-# zwei anfragen bus/person getrennt
-# zwei unterschiedliche apis /driving-car oder /driving-hgv (bus)
-# /foot-walking (person)
-## zwei komplette origins bus/person
-## erst lon dann lat
-## destiantions können gleich bleiben
-## probe request für tests und evtl. andere gewichtung/ergebnisse von ors
 #print(route_calculation.get_api_gps_data(2, 2))
 
 ors_api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkYTMzMzUzNGQ5ZTQyNWQ5YjY3MzYxYjJiN2IxMzRjIiwiaCI6Im11cm11cjY0In0="
@@ -57,7 +49,6 @@ def get_possible_routes():
     person_locations = build_locations(gps_data["person"], next_stops)
     bus_locations = build_locations(gps_data["bus_gps"], next_stops)
 
-    # api call person
     person_body = {
         "locations": person_locations,
         "sources": [0],
@@ -67,7 +58,7 @@ def get_possible_routes():
     }
     person_routes = api_call(ors_api_url_person, header, person_body)
     print("person routes: ", person_routes)
-    # api call bus
+
     bus_body = {
         "locations": bus_locations,
         "sources": [0],
