@@ -25,6 +25,10 @@ def get_bus_from_line(cur, line_name):
     cur.execute("select * from Bus where fk_line_id=%s limit 1", (line["id"],))
     return cur.fetchone()
 
+def get_bus_from_id(cur, bus_id):
+    cur.execute("select * from Bus where id=%s limit 1", (bus_id,))
+    return cur.fetchone()
+
 def get_next_stops_ids(cur, next_stop_id):
     cur.execute("select sequenc_order from LineStops where fk_stop_id=%s", (next_stop_id,))
     next_stop_order = cur.fetchone()
@@ -42,7 +46,7 @@ def get_api_gps_data(test_bus_id, test_person_id):
     conn = connect_db()
     cur = conn.cursor(dictionary = True)
 
-    bus = get_bus_from_line(cur, "1407") ## hardcoded for now
+    bus = get_bus_from_id(cur, test_bus_id) ## hardcoded for now
     if not bus:
         return print("Bus null"), None
 
