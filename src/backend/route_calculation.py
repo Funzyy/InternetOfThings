@@ -25,10 +25,17 @@ def get_bus_from_line(cur, line_name):
     cur.execute("select * from Bus where fk_line_id=%s limit 1", (line["id"],))
     return cur.fetchone()
 
-def get_next_stops(cur, next_stop_id,):
+def get_next_stops_ids(cur, next_stop_id):
     cur.execute("select sequenc_order from LineStops where fk_stop_id=%s", (next_stop_id,))
     next_stop_order = cur.fetchone()
-    cur.execute("select * from LineStops where sequenc_order>=%s order by sequenc_order", (next_stop_order["sequenc_order"],))
+    cur.execute("select fk_stop_id from LineStops where sequenc_order>=%s order by sequenc_order", (next_stop_order["sequenc_order"],))
+    return cur.fetchall()
+
+def get_next_stops_gps(cur, next_stop_ids):
+    ids = [item["fk_stop_id"] for item in next_stop_ids]
+    id_list = ", ".join(["%s"] * len(ids))
+    query = f"select * from BusStops where id in ({id_list})"
+    cur.execute(query, tuple(ids))
     return cur.fetchall()
 
 def get_api_gps_data(test_bus_id, test_person_id):
@@ -47,10 +54,10 @@ def get_api_gps_data(test_bus_id, test_person_id):
     if not bus_gps:
         return print("Bus GPS null"), None
     
-    next_stops_ids = get_next_stops(cur, bus["next_stop"])
+    next_stops_ids = get_next_stops_ids(cur, bus["next_stop"])
     if not next_stops_ids:
         return print("Next stop null"), None
-
+    print(next_stops_ids)
     next_stops_gps = get_next_stops_gps(cur, next_stops_ids)
     if not next_stops_gps:
         return print("Next stop GPS null"), None
