@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { busLines } from '../data/busData';
 import 'leaflet/dist/leaflet.css';
 import './MapScreen.css';
 import L from 'leaflet';
+import BusWorker from '../workers/busSimulation.worker.js?worker';
+import busCsvUrl from '../data/busFahrt_1407_2026-01-12.csv?url';
 
 // Fix for default marker icon in React Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -19,21 +21,70 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+// Helper component to center map when position changes
+const RecenterAutomatically = ({ lat, lng }) => {
+    const map = useMap();
+    useEffect(() => {
+        map.setView([lat, lng]);
+    }, [lat, lng, map]);
+    return null;
+};
+
 const MapScreen = () => {
     const { id } = useParams();
-    const bus = busLines.find(b => b.id === parseInt(id));
+    const [bus, setBus] = useState(null);
+    const [simulatedPosition, setSimulatedPosition] = useState(null);
+    const workerRef = useRef(null);
+
+    useEffect(() => {
+        const foundBus = busLines.find(b => b.id === parseInt(id));
+        setBus(foundBus);
+
+        // Reset simulation state when bus changes
+        setSimulatedPosition(null);
+        if (workerRef.current) {
+            workerRef.current.terminate();
+            workerRef.current = null;
+        }
+
+        // Start simulation for Bus 1407 (ID 4)
+        if (foundBus && foundBus.id === 4) {
+            const worker = new BusWorker();
+            workerRef.current = worker;
+
+            worker.postMessage({
+                type: 'START_SIMULATION',
+                payload: { csvUrl: busCsvUrl }
+            });
+
+            worker.onmessage = (e) => {
+                const { type, payload } = e.data;
+                if (type === 'POSITION_UPDATE') {
+                    setSimulatedPosition({ lat: payload.lat, lng: payload.lon });
+                }
+            };
+        }
+
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+            }
+        };
+    }, [id]);
 
     if (!bus) {
-        return <div>Bus line not found</div>;
+        return <div>Loading...</div>; // Or handle not found
     }
 
-    const center = [bus.currentPosition.lat, bus.currentPosition.lng];
+    // Use simulated position if available, otherwise static
+    const currentPos = simulatedPosition || bus.currentPosition;
+    const center = [currentPos.lat, currentPos.lng];
 
     return (
         <div className="map-screen-container">
             <header className="map-header">
                 <Link to="/" className="back-button">‹</Link>
-                <h1>{bus.name} Map</h1>
+                <h1>{bus.name} Map {simulatedPosition ? '(Live)' : ''}</h1>
             </header>
             <div className="map-container">
                 <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
@@ -41,6 +92,8 @@ const MapScreen = () => {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
+
+                    <RecenterAutomatically lat={currentPos.lat} lng={currentPos.lng} />
 
                     {/* Stops */}
                     {bus.stops.map(stop => (
@@ -52,9 +105,11 @@ const MapScreen = () => {
                     ))}
 
                     {/* Current Bus Position */}
-                    <Marker position={[bus.currentPosition.lat, bus.currentPosition.lng]}>
+                    <Marker position={[currentPos.lat, currentPos.lng]}>
                         <Popup>
                             Current Position
+                            {simulatedPosition && <br />}
+                            {simulatedPosition && <small>Simulated from CSV</small>}
                         </Popup>
                     </Marker>
 
