@@ -23,6 +23,12 @@ def builld_header():
         "Content-Type": "application/json; charset=utf-8"
     }
 
+def build_locations(start_location, stop_locations):
+    locations = [[start_location["lon"], start_location["lat"]]]
+    for stop in stop_locations:
+        locations.append([stop["lon"], stop["lat"]])
+    return locations
+
 def api_call(url, header, body):
     response = requests.post(
         url,
