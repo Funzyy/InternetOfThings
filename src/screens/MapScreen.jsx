@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
-import { busLines } from '../data/busData';
+import React, {useEffect, useState, useRef} from 'react';
+import {useParams, Link} from 'react-router-dom';
+import {MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents} from 'react-leaflet';
+import {busLines} from '../data/busData';
 import 'leaflet/dist/leaflet.css';
 import './MapScreen.css';
 import L from 'leaflet';
@@ -12,7 +12,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 import userIconImage from '../icons/userIconImage.png';
-import { useGeolocation } from '../hooks/useGeolocation.js';
+import {useGeolocation} from '../hooks/useGeolocation.js';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -47,20 +47,48 @@ const createArrowIcon = (heading) => {
     });
 };
 
-// Helper component to center map when position changes
-const RecenterAutomatically = ({ lat, lng }) => {
+// Follow + Recenter Controller
+const FollowController = ({mode, targetLatLng, defaultZoom, onStopFollowing}) => {
     const map = useMap();
+    const lockedZoomRef = React.useRef(null);
+    const prevModeRef = React.useRef(null);
+
     useEffect(() => {
-        map.setView([lat, lng]);
-    }, [lat, lng, map]);
+        if (!mode || !targetLatLng) return;
+
+        const modeChanged = prevModeRef.current !== mode;
+        prevModeRef.current = mode;
+
+        if (modeChanged) {
+            lockedZoomRef.current = (typeof defaultZoom === 'number') ? defaultZoom : map.getZoom();
+            map.flyTo(targetLatLng, lockedZoomRef.current, {animate: true, duration: 0.6});
+            return;
+        }
+
+        const z = lockedZoomRef.current ?? map.getZoom();
+        map.setView(targetLatLng, z, {animate: false});
+    }, [mode, targetLatLng?.[0], targetLatLng?.[1], defaultZoom, map]);
+
+    useMapEvents({
+        dragstart: () => onStopFollowing?.(),
+
+        zoomend: () => {
+            if (!mode || !targetLatLng) return;
+            lockedZoomRef.current = map.getZoom();
+            map.setView(targetLatLng, lockedZoomRef.current, {animate: false});
+        },
+    });
+
     return null;
 };
 
 const MapScreen = () => {
-    const { id } = useParams();
+    const {id} = useParams();
     const [bus, setBus] = useState(null);
     const [simulatedPosition, setSimulatedPosition] = useState(null);
     const workerRef = useRef(null);
+    const [followTarget, setFollowTarget] = useState('auto'); // 'auto' | 'user' | 'bus' | 'none'
+
 
     useEffect(() => {
         const foundBus = busLines.find(b => b.id === parseInt(id));
@@ -80,11 +108,11 @@ const MapScreen = () => {
 
             worker.postMessage({
                 type: 'START_SIMULATION',
-                payload: { csvUrl: busCsvUrl }
+                payload: {csvUrl: busCsvUrl}
             });
 
             worker.onmessage = (e) => {
-                const { type, payload } = e.data;
+                const {type, payload} = e.data;
                 if (type === 'POSITION_UPDATE') {
                     setSimulatedPosition({
                         lat: payload.lat,
@@ -102,7 +130,15 @@ const MapScreen = () => {
         };
     }, [id]);
 
-    const { position: userPos } = useGeolocation();
+    const {position: userPos} = useGeolocation();
+
+    useEffect(() => {
+        if (followTarget !== 'auto') return;
+
+        if (userPos) setFollowTarget('user');
+        else if (bus) setFollowTarget('bus');
+    }, [userPos, bus, followTarget]);
+
 
     if (!bus) {
         return <div>Loading...</div>; // Or handle not found
@@ -110,7 +146,27 @@ const MapScreen = () => {
 
     // Use simulated position if available, otherwise static
     const currentPos = simulatedPosition || bus.currentPosition;
-    const center = [currentPos.lat, currentPos.lng];
+
+    const busLatLng = [currentPos.lat, currentPos.lng];
+    const userLatLng = userPos ? [userPos.lat, userPos.lng] : null;
+
+    const initialCenter = userLatLng || busLatLng;
+
+    const activeTargetLatLng =
+        followTarget === 'user' ? userLatLng :
+            followTarget === 'bus' ? busLatLng :
+                null;
+
+    const USER_ZOOM = 16;
+    const BUS_ZOOM = 13;
+
+    const followMode = (followTarget === 'user' || followTarget === 'bus') ? followTarget : null;
+
+    const defaultZoom =
+        followTarget === 'user' ? USER_ZOOM :
+            followTarget === 'bus' ? BUS_ZOOM :
+                undefined;
+
 
     // Determine icon: Simulated gets arrow, Static gets default
     const markerIcon = simulatedPosition
@@ -124,13 +180,23 @@ const MapScreen = () => {
                 <h1>{bus.name} Map {simulatedPosition ? '(Live)' : ''}</h1>
             </header>
             <div className="map-container">
-                <MapContainer center={center} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <MapContainer
+                    center={initialCenter}
+                    zoom={13}
+                    style={{height: '100%', width: '100%'}}
+                    scrollWheelZoom="center"
+                    touchZoom="center">
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    <RecenterAutomatically lat={currentPos.lat} lng={currentPos.lng} />
+                    <FollowController
+                        mode={followMode}
+                        targetLatLng={activeTargetLatLng}
+                        defaultZoom={defaultZoom}
+                        onStopFollowing={() => setFollowTarget('none')}
+                    />
 
                     {/* Stops */}
                     {bus.stops.map(stop => (
@@ -146,11 +212,10 @@ const MapScreen = () => {
                     )}
 
                     {/* Current Bus Position */}
-                    {/* Current Bus Position */}
                     <Marker position={[currentPos.lat, currentPos.lng]} icon={markerIcon}>
                         <Popup>
                             Current Position
-                            {simulatedPosition && <br />}
+                            {simulatedPosition && <br/>}
                             {simulatedPosition && <small>Simulated from CSV</small>}
                         </Popup>
                     </Marker>
@@ -177,6 +242,35 @@ const MapScreen = () => {
                         />
                     )}
                 </MapContainer>
+                <div className="map-controls">
+                    <button
+                        type="button"
+                        className={followTarget === 'none' ? 'active' : ''}
+                        onClick={() => setFollowTarget('none')}
+                        title="Folgen aus"
+                    >
+                        ✋
+                    </button>
+
+                    <button
+                        type="button"
+                        className={followTarget === 'user' ? 'active' : ''}
+                        onClick={() => setFollowTarget('user')}
+                        disabled={!userLatLng}
+                        title="Auf User zentrieren"
+                    >
+                        📍
+                    </button>
+
+                    <button
+                        type="button"
+                        className={followTarget === 'bus' ? 'active' : ''}
+                        onClick={() => setFollowTarget('bus')}
+                        title="Bus folgen"
+                    >
+                        🚌
+                    </button>
+                </div>
             </div>
         </div>
     );
