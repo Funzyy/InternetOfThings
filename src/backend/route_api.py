@@ -40,7 +40,7 @@ def get_possible_routes():
     if not header:
         return print("header null"), None
 
-    gps_data = route_calculation.get_api_gps_data(1, 1)
+    gps_data = route_calculation.get_api_gps_data(2, 2)
     if not gps_data:
         return print("GPS data null"), None
 
@@ -57,7 +57,6 @@ def get_possible_routes():
         "metrics": ["duration"],
     }
     person_routes = api_call(ors_api_url_person, header, person_body)
-    print("person routes: ", person_routes)
 
     bus_body = {
         "locations": bus_locations,
@@ -67,7 +66,19 @@ def get_possible_routes():
         "metrics": ["duration"],
     }
     bus_routes = api_call(ors_api_url_bus, header, bus_body)
-    print("bus routes: ", bus_routes)
+
+    for i in range(len(next_stops)):
+        stop = next_stops[i]
+        person = person_routes["data"]["durations"][0][i]
+        bus = bus_routes["data"]["durations"][0][i]
+
+        print(f"Stop {i + 1}: {stop['stop_name']} ({stop['lat']}, {stop['lon']})")
+        print("-" * 50)
+        print(f"{'Typ':<10} {'Dauer (s)':<12}")
+        print("-" * 50)
+        print(f"{'Person':<10} {person:<12}")
+        print(f"{'Bus':<10} {bus:<12}")
+        print()
     # routen vergleichen und schauen wo person schneller ist als bus
 
     return print("nothing for now"), None
