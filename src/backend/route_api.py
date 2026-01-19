@@ -80,8 +80,7 @@ def get_possible_routes():
         print(f"{'Bus':<10} {bus:<12}")
         print()
 
-    # routen vergleichen und schauen wo person schneller ist als bus
-    possible_routes = {}
+    possible_routes = []
     for i in range(len(person_routes["data"]["durations"][0])):
         person_duration = person_routes["data"]["durations"][0][i]
         bus_duration = bus_routes["data"]["durations"][0][i]
