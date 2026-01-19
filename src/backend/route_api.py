@@ -83,12 +83,20 @@ def get_possible_routes():
     # routen vergleichen und schauen wo person schneller ist als bus
     possible_routes = {}
     for i in range(len(person_routes["data"]["durations"][0])):
-        person = person_routes["data"]["durations"][0][i]
-        bus = bus_routes["data"]["durations"][0][i]
-        if person < bus:
-            possible_routes[f"duration_{i}"] = person
-            possible_routes[f"person_location_{i}"] = person_routes["data"]["destinations"][i]["location"][1], person_routes["data"]["destinations"][i]["location"][0]
-            possible_routes[f"stop_location_{i}"] = next_stops[i]["lat"], next_stops[i]["lon"]
+        person_duration = person_routes["data"]["durations"][0][i]
+        bus_duration = bus_routes["data"]["durations"][0][i]
+        if person_duration < bus_duration:
+            possible_routes.append({
+                "duration": person_duration,
+                "person_location": (
+                    person_routes["data"]["destinations"][i]["location"][1],
+                    person_routes["data"]["destinations"][i]["location"][0],
+                ),
+                "stop_location": (
+                    next_stops[i]["lat"],
+                    next_stops[i]["lon"],
+                ),
+            })
     print("possible routes:", possible_routes)
     return possible_routes if possible_routes else None
 
