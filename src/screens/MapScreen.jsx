@@ -103,6 +103,7 @@ const MapScreen = () => {
     const [simSpeed, setSimSpeed] = useState(1); // 1x default
     const [userRouteGeoJson, setUserRouteGeoJson] = useState(null);
     const {position: userPos} = useGeolocation();
+    const backendDuration = userRouteGeoJson?.features?.[0]?.properties?.duration ?? null;
 
     const backendPersonLatLng = (() => {
         if (!userRouteGeoJson?.features?.length) return null;
@@ -406,7 +407,11 @@ const MapScreen = () => {
                             })}
                         />
                     )}
-
+                    {backendDuration && (
+                        <div className="route-info-box">
+                            🚶 Dauer zum Ziel: <strong>{formatDuration(backendDuration)}</strong>
+                        </div>
+                    )}
                 </MapContainer>
                 <div className="map-controls">
                     <button
@@ -462,3 +467,12 @@ const MapScreen = () => {
 };
 
 export default MapScreen;
+
+function formatDuration(seconds) {
+    if (!seconds && seconds !== 0) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs} s`;
+    if (secs < 10) return `${mins}:0${secs} min`;
+    return `${mins}:${secs} min`;
+}
