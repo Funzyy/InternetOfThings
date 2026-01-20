@@ -1,5 +1,8 @@
 /* eslint-disable no-restricted-globals */
 
+let intervalMs = 1000;
+let timeoutId = null;
+
 self.onmessage = async (e) => {
     const { type, payload } = e.data;
 
@@ -14,11 +17,10 @@ self.onmessage = async (e) => {
 
             let currentIndex = 0;
 
-            // Interval to emit position updates
-            const intervalId = setInterval(() => {
+            const tick = () => {
                 if (currentIndex >= sortedData.length) {
-                    clearInterval(intervalId);
-                    self.postMessage({ type: 'SIMULATION_COMPLETE' });
+                    timeoutId = null;
+                    self.postMessage({ type: "SIMULATION_COMPLETE" });
                     return;
                 }
 
@@ -48,19 +50,30 @@ self.onmessage = async (e) => {
                 });
 
                 currentIndex++;
-            }, 1000); // Update every 1 second (matching roughly the data interval)
 
-            // Store interval ID to clear it if needed
-            self.intervalId = intervalId;
+                timeoutId = setTimeout(tick, intervalMs);
+            };
+
+            // Start
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(tick, intervalMs);
+
+            // Stop
+            self.timeoutId = timeoutId;
 
         } catch (error) {
             console.error("Worker error:", error);
             self.postMessage({ type: 'ERROR', payload: error.message });
         }
     } else if (type === 'STOP_SIMULATION') {
-        if (self.intervalId) {
-            clearInterval(self.intervalId);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
         }
+    } else if (type === 'SET_SPEED') {
+        const speed = Number(payload?.speed);
+        if (!Number.isFinite(speed) || speed <= 0) return;
+        intervalMs = Math.max(50, Math.round(1000 / speed));
     }
 };
 

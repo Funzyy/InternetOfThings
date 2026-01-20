@@ -100,7 +100,7 @@ const MapScreen = () => {
     const [followTarget, setFollowTarget] = useState('auto'); // 'auto' | 'user' | 'bus' | 'none'
     const [route1407GeoJson, setRoute1407GeoJson] = useState(null);
     const [stopsGeoJson, setStopsGeoJson] = useState(null);
-
+    const [simSpeed, setSimSpeed] = useState(1); // 1x default
 
     useEffect(() => {
         const foundBus = busLines.find(b => b.id === parseInt(id));
@@ -136,6 +136,7 @@ const MapScreen = () => {
 
             const worker = new BusWorker();
             workerRef.current = worker;
+            worker.postMessage({ type: "SET_SPEED", payload: { speed: simSpeed } });
 
             worker.postMessage({
                 type: 'START_SIMULATION',
@@ -161,6 +162,16 @@ const MapScreen = () => {
             }
         };
     }, [id]);
+
+    useEffect(() => {
+        if (!workerRef.current) return;
+
+        workerRef.current.postMessage({
+            type: "SET_SPEED",
+            payload: { speed: simSpeed }
+        });
+
+    }, [simSpeed]);
 
 
     const {position: userPos} = useGeolocation();
@@ -360,6 +371,25 @@ const MapScreen = () => {
                     >
                         🚌
                     </button>
+
+                    {/* Simulation Speed */}
+                    <div className="sim-speed-wrapper">
+                        <input
+                            className="sim-speed-slider"
+                            type="range"
+                            min="0.25"
+                            max="4"
+                            step="0.25"
+                            value={simSpeed}
+                            onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
+                        />
+                        <div
+                            className="sim-speed-bubble"
+                            style={{ left: `${((simSpeed - 0.25) / (4 - 0.25)) * 100}%` }}
+                        >
+                            {simSpeed.toFixed(2)}×
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
