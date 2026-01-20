@@ -82,7 +82,7 @@ alter table LineStops add constraint fk_stop_id_line_stops foreign key (fk_stop_
     ("Coburg Hörnleinsgrund", "50.2678572032965", "10.947515930531072"),
     ("Coburg Geleitstr.", "50.26848490802891", "10.95302175964809"),
     ("Coburg ZOB", "50.26160107624805", "10.958334237390288"),
-    ("Coburg Mohrenbrücke", "50.262314081524224", "10.960613620965733"),
+    ("Coburg Mohrenbrücke", "50.261980487919296", "10.96110873399226"),
     ("Coburg Mohrenstr.", "50.26040900588221", "10.96415986243021"),
     ("Coburg Theaterplatz", "50.259911444756405", "10.966577656514794"),
     ("Coburg Ehrenburg", "50.257631569481724", "10.967349564468439"),
