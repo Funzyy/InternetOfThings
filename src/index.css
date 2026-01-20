@@ -13,11 +13,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
-  min-width: 320px;
-  min-height: 100vh;
+  overflow: hidden;
 }
 
 /* Reset for light mode default */
