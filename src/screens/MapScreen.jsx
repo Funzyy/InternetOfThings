@@ -469,10 +469,12 @@ const MapScreen = () => {
 export default MapScreen;
 
 function formatDuration(seconds) {
-    if (!seconds && seconds !== 0) return "";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    if (seconds == null) return "";
+    const totalSeconds = Math.round(seconds);
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
     if (mins === 0) return `${secs} s`;
-    if (secs < 10) return `${mins}:0${secs} min`;
-    return `${mins}:${secs} min`;
+    if (secs === 0) return `${mins} min`;
+    return `${mins}:${secs.toString().padStart(2, "0")} min`;
 }
+
