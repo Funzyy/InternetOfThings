@@ -407,12 +407,12 @@ const MapScreen = () => {
                             })}
                         />
                     )}
-                    {backendDuration && (
-                        <div className="route-info-box">
-                            🚶 Dauer zum Ziel: <strong>{formatDuration(backendDuration)}</strong>
-                        </div>
-                    )}
                 </MapContainer>
+                {backendDuration && (
+                    <div className="route-info-box">
+                        🚶 Travel time: <strong>{formatDuration(backendDuration)}</strong>
+                    </div>
+                )}
                 <div className="map-controls">
                     <button
                         type="button"
