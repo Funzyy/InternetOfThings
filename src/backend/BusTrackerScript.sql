@@ -1,5 +1,5 @@
 -- Schema
--- drop database if exists BusTracker;
+drop database if exists BusTracker;
 create database if not exists BusTracker;
 use BusTracker;
 -- ----------
@@ -39,8 +39,14 @@ create table LineStops (
     fk_stop_id int not null,
     sequenc_order int
 );
+-- Person Test GPS-Data
+create table PersonGPS (
+	id int primary key not null auto_increment,
+    lat varchar(45),
+    lon varchar(45)
+);
 -- ----------
--- Tabellen verknüpfen 
+-- Tabellen verknüpfen
 -- Bus
 alter table Bus add constraint fk_line_id_bus foreign key (fk_line_id) references BusLine (id);
 -- Bus Poosition
@@ -152,6 +158,19 @@ insert into LineStops(fk_line_id, fk_stop_id, sequenc_order) values
     (1, 48, 43),
     (1, 49, 44),
     (1, 50, 45);
+-- Test Daten einfügen
+insert into Bus(fk_line_id, prev_stop, next_stop) values
+	(1, 6, 9), -- test one !set!
+    (1, 20, 21), -- test two !set!
+	(1, 1, 2); -- test three !set!
+insert into BusPosition(fk_bus_id, lat, lon, gps_send_at) values
+	(1, "50.25901833333334", "10.948544", now()), -- test one !set! Schaumberger Schule (Judenberg) !!!MUSS VERSCHOBEN WERDEN!!!
+	(2, "50.27074883333333", "10.941947333333333", now()), -- test two !set! Fallkeneggstraße
+	(3, "50.23982416666666", "10.923143000000001", now()); -- test three !set! zw. Schorkendorf/Scheuerfeld
+insert into PersonGPS(lat, lon) values
+	("50.26018915790565", "10.949023738101772"), -- test one !set! Spielplatz
+    ("50.26541412201662", "10.96084777541769"), -- test two !set! Edeka
+    ("50.265427844087085", "10.924621794138677"); -- test three !set! Trim dich pfad !!!MUSS AUF WYDR GEÄNDERT WERDEN!!!
 -- ---------
 -- Test ausgaben
 -- select * from BusLine;
