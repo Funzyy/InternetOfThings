@@ -101,6 +101,7 @@ const MapScreen = () => {
     const [route1407GeoJson, setRoute1407GeoJson] = useState(null);
     const [stopsGeoJson, setStopsGeoJson] = useState(null);
     const [simSpeed, setSimSpeed] = useState(1); // 1x default
+    const [userRouteGeoJson, setUserRouteGeoJson] = useState(null);
 
     useEffect(() => {
         const foundBus = busLines.find(b => b.id === parseInt(id));
@@ -175,6 +176,38 @@ const MapScreen = () => {
 
 
     const {position: userPos} = useGeolocation();
+
+    useEffect(() => {
+        if (!userPos) {
+            setUserRouteGeoJson(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        (async () => {
+            try {
+                const res = await fetch("http://localhost:8080/routes/geojson");
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const json = await res.json();
+
+                if (!json || json.type !== "FeatureCollection") {
+                    throw new Error("No FeatureCollection returned");
+                }
+
+                if (!cancelled) setUserRouteGeoJson(json);
+            } catch (err) {
+                console.warn("No backend route available:", err);
+                if (!cancelled) setUserRouteGeoJson(null);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [userPos?.lat, userPos?.lng]);
+
 
     useEffect(() => {
         if (followTarget !== 'auto') return;
@@ -342,6 +375,19 @@ const MapScreen = () => {
                             opacity={0.7}
                         />
                     )}
+                    {userRouteGeoJson && (
+                        <GeoJSON
+                            data={userRouteGeoJson}
+                            style={() => ({
+                                color: "#1a73e8",
+                                weight: 5,
+                                opacity: 0.9,
+                                dashArray: "10 10",
+                                lineCap: "round",
+                            })}
+                        />
+                    )}
+
                 </MapContainer>
                 <div className="map-controls">
                     <button
