@@ -102,6 +102,28 @@ const MapScreen = () => {
     const [stopsGeoJson, setStopsGeoJson] = useState(null);
     const [simSpeed, setSimSpeed] = useState(1); // 1x default
     const [userRouteGeoJson, setUserRouteGeoJson] = useState(null);
+    const {position: userPos} = useGeolocation();
+
+    const backendPersonLatLng = (() => {
+        if (!userRouteGeoJson?.features?.length) return null;
+
+        const p = userRouteGeoJson.features[0]?.properties?.person_location;
+
+        if (Array.isArray(p) && p.length >= 2) {
+            const [lat, lng] = p;
+            if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        }
+
+        return null;
+    })();
+
+    const effectiveUserPos = backendPersonLatLng
+        ? { lat: backendPersonLatLng.lat, lng: backendPersonLatLng.lng, accuracy: null, isMock: true }
+        : (userPos ? { ...userPos, isMock: false } : null);
+
+    const userLatLng = effectiveUserPos
+        ? [effectiveUserPos.lat, effectiveUserPos.lng]
+        : null;
 
     useEffect(() => {
         const foundBus = busLines.find(b => b.id === parseInt(id));
@@ -175,8 +197,6 @@ const MapScreen = () => {
     }, [simSpeed]);
 
 
-    const {position: userPos} = useGeolocation();
-
     useEffect(() => {
         if (!userPos) {
             setUserRouteGeoJson(null);
@@ -212,9 +232,9 @@ const MapScreen = () => {
     useEffect(() => {
         if (followTarget !== 'auto') return;
 
-        if (userPos) setFollowTarget('user');
+        if (effectiveUserPos) setFollowTarget('user');
         else if (bus) setFollowTarget('bus');
-    }, [userPos, bus, followTarget]);
+    }, [effectiveUserPos, bus, followTarget]);
 
 
     if (!bus) {
@@ -225,7 +245,6 @@ const MapScreen = () => {
     const currentPos = simulatedPosition || bus.currentPosition;
 
     const busLatLng = [currentPos.lat, currentPos.lng];
-    const userLatLng = userPos ? [userPos.lat, userPos.lng] : null;
 
     const initialCenter = userLatLng || busLatLng;
 
@@ -305,13 +324,12 @@ const MapScreen = () => {
                         );
                     })}
 
-                    {userPos && (
+                    {effectiveUserPos && (
                         <>
-                            {/* Accuracy-Circle */}
-                            {userPos.accuracy && (
+                            {!effectiveUserPos.isMock && effectiveUserPos.accuracy && (
                                 <Circle
-                                    center={[userPos.lat, userPos.lng]}
-                                    radius={userPos.accuracy}
+                                    center={[effectiveUserPos.lat, effectiveUserPos.lng]}
+                                    radius={effectiveUserPos.accuracy}
                                     pathOptions={{
                                         color: "#1a73e8",
                                         weight: 1,
@@ -322,18 +340,19 @@ const MapScreen = () => {
                                 />
                             )}
 
-                            {/* User-Icon */}
                             <Marker
-                                position={[userPos.lat, userPos.lng]}
+                                position={[effectiveUserPos.lat, effectiveUserPos.lng]}
                                 icon={userIcon}
                             >
                                 <Popup>
-                                    You are within {Math.round(userPos.accuracy)} meters from this point
+                                    {effectiveUserPos.isMock
+                                        ? "Mock-Userposition (from Backend)"
+                                        : `You are within ${Math.round(effectiveUserPos.accuracy)} meters from this point`
+                                    }
                                 </Popup>
                             </Marker>
                         </>
                     )}
-
 
                     {/* Current Bus Position */}
                     <Marker position={[currentPos.lat, currentPos.lng]} icon={markerIcon}>
