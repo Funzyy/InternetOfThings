@@ -50,7 +50,7 @@ export const busLines = [
         id: 4,
         name: "Linie 1407",
         route: "Neershof ↔ Scheuerfeld",
-        color: "#FF0000",
+        color: "rgba(255,0,0,0.68)",
         stops: [
             { id: 401, name: "Neershof", lat: 50.2690447, lng: 10.9550431 },
             { id: 402, name: "Callenberg", lat: 50.2663964, lng: 10.9562537 },
