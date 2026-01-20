@@ -1,14 +1,20 @@
+from email import header
 from email.quoprimime import body_check
+
+from pyexpat import features
 
 import route_calculation
 import requests
+import heapq
 
 #print(route_calculation.get_api_gps_data(2, 2))
 
 ors_api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkYTMzMzUzNGQ5ZTQyNWQ5YjY3MzYxYjJiN2IxMzRjIiwiaCI6Im11cm11cjY0In0="
 ors_api_url_bus = "https://api.openrouteservice.org/v2/matrix/driving-hgv"
 ors_api_url_person = "https://api.openrouteservice.org/v2/matrix/foot-walking"
+ors_api_url_geoJson = "https://api.openrouteservice.org/v2/directions/foot-walking/geojson"
 max_stops = 5
+routes_to_display = 2
 
 def build_header():
     header = {
@@ -34,6 +40,17 @@ def api_call(url, header, specific_body):
         "status": response.status_code,
         "data": response.json(),
     }
+
+def api_call_geojson(route):
+    body = {
+        "coordinates": [
+            [route["person_location"][1], route["person_location"][0]],
+            [route["stop_location"][1], route["stop_location"][0]],
+        ],
+    }
+    response = requests.post(ors_api_url_geoJson, json=body, headers=build_header())
+    print("Dumping plain text response:", response.text)
+    return response.json()
 
 def get_possible_routes():
     header = build_header()
@@ -88,18 +105,38 @@ def get_possible_routes():
             possible_routes.append({
                 "duration": person_duration,
                 "person_location": (
-                    person_routes["data"]["destinations"][i]["location"][1],
-                    person_routes["data"]["destinations"][i]["location"][0],
+                    float(gps_data["person"]["lat"]),
+                    float(gps_data["person"]["lon"]),
                 ),
                 "stop_location": (
-                    next_stops[i]["lat"],
-                    next_stops[i]["lon"],
+                    float(next_stops[i]["lat"]),
+                    float(next_stops[i]["lon"]),
                 ),
             })
     print("possible routes:", possible_routes)
     return possible_routes if possible_routes else None
 
-# poly line von möglichen routen holen
-# polyline zurück geben
-get_possible_routes()
+def get_geojson_route_details():
+    routes_geoJson = {
+        "type": "FeatureCollection",
+        "features": [],
+    }
+    possible_routes = get_possible_routes()
+    if not possible_routes:
+        return None
 
+    shortest_routes = heapq.nsmallest(routes_to_display, possible_routes, key=lambda r: r["duration"])
+
+    for index, route in enumerate(shortest_routes):
+
+        response = api_call_geojson(route)
+
+        feature = response["features"][0]
+        feature["properties"]["rank"] = index + 1
+        feature["properties"]["duration"] = route["duration"]
+        feature["properties"]["person_location"] = route["person_location"]
+        feature["properties"]["stop_location"] = route["stop_location"]
+
+        routes_geoJson["features"].append(feature)
+
+    return routes_geoJson
