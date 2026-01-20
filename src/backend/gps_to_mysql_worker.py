@@ -37,6 +37,7 @@ def insert_position(cur, fk_bus_id: int, lat, lon, gps_send_at: str):
         "INSERT INTO BusPosition (fk_bus_id, lat, lon, gps_send_at) VALUES (%s, %s, %s, %s)",
         (fk_bus_id, str(lat), str(lon), gps_send_at),
     )
+# TODO: function to update next_stop & prev_stop
 
 def main():
     init_db()
