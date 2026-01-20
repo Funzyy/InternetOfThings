@@ -1,17 +1,17 @@
 import React, {useEffect, useState, useRef} from 'react';
 import {useParams, Link} from 'react-router-dom';
-import {MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents} from 'react-leaflet';
+import {MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents, GeoJSON, Circle} from 'react-leaflet';
 import {busLines} from '../data/busData';
 import 'leaflet/dist/leaflet.css';
 import './MapScreen.css';
 import L from 'leaflet';
 import BusWorker from '../workers/busSimulation.worker.js?worker';
 import busCsvUrl from '../data/busFahrt_1407_2026-01-12.csv?url';
+import route1407GeoJsonUrl from '../data/map.geojson?url';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-import userIconImage from '../icons/userIconImage.png';
 import {useGeolocation} from '../hooks/useGeolocation.js';
 
 let DefaultIcon = L.icon({
@@ -21,14 +21,24 @@ let DefaultIcon = L.icon({
     iconAnchor: [12, 41]
 });
 
-let userIcon = L.icon({
-    iconUrl: userIconImage,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+const userIcon = L.divIcon({
+    className: "user-dot-icon",
+    html: `<div class="user-dot"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
 });
 
+
 L.Marker.prototype.options.icon = DefaultIcon;
+
+const busStopIcon = L.divIcon({
+    className: "bus-stop-icon",
+    html: `<div class="bus-stop-circle">BUS</div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
+});
+
 
 // Helper to create a rotated arrow icon
 const createArrowIcon = (heading) => {
@@ -88,6 +98,8 @@ const MapScreen = () => {
     const [simulatedPosition, setSimulatedPosition] = useState(null);
     const workerRef = useRef(null);
     const [followTarget, setFollowTarget] = useState('auto'); // 'auto' | 'user' | 'bus' | 'none'
+    const [route1407GeoJson, setRoute1407GeoJson] = useState(null);
+    const [stopsGeoJson, setStopsGeoJson] = useState(null);
 
 
     useEffect(() => {
@@ -101,8 +113,27 @@ const MapScreen = () => {
             workerRef.current = null;
         }
 
-        // Start simulation for Bus 1407 (ID 4)
-        if (foundBus && foundBus.id === 4) {
+        setRoute1407GeoJson(null);
+
+        if (foundBus?.id === 4) {
+            (async () => {
+                try {
+                    const res = await fetch(route1407GeoJsonUrl);
+                    const json = await res.json();
+
+                    setRoute1407GeoJson(json);
+
+                    const stopFeatures = (json.features || []).filter(
+                        f => f?.geometry?.type === "Point" && f?.properties?.kind === "stop"
+                    );
+
+                    setStopsGeoJson({type: "FeatureCollection", features: stopFeatures});
+
+                } catch (err) {
+                    console.error('Failed to load GeoJSON:', err);
+                }
+            })();
+
             const worker = new BusWorker();
             workerRef.current = worker;
 
@@ -126,9 +157,11 @@ const MapScreen = () => {
         return () => {
             if (workerRef.current) {
                 workerRef.current.terminate();
+                workerRef.current = null;
             }
         };
     }, [id]);
+
 
     const {position: userPos} = useGeolocation();
 
@@ -198,18 +231,65 @@ const MapScreen = () => {
                         onStopFollowing={() => setFollowTarget('none')}
                     />
 
-                    {/* Stops */}
-                    {bus.stops.map(stop => (
-                        <Marker key={stop.id} position={[stop.lat, stop.lng]}>
-                            <Popup>{stop.name}</Popup>
-                        </Marker>
-                    ))}
+                    {/* Stops (aus GeoJSON) */}
+                    {stopsGeoJson?.features?.map((f) => {
+                        const [lon, lat] = f.geometry.coordinates; // GeoJSON: [lon, lat]
+                        const name = f.properties?.name ?? f.properties?.id ?? "Stop";
+                        const id = f.properties?.id ?? `${lon},${lat}`;
+
+                        return (
+                            <Marker
+                                key={id}
+                                position={[lat, lon]}
+                                icon={busStopIcon}
+                                eventHandlers={{
+                                    click: (e) => {
+                                        const el = e.target?.getElement?.();
+                                        if (!el) return;
+
+                                        el.classList.remove("is-active");
+                                        void el.offsetWidth;
+                                        el.classList.add("is-active");
+
+                                        setTimeout(() => el.classList.remove("is-active"), 350);
+                                    },
+                                }}
+                            >
+                                <Popup>{name}</Popup>
+                            </Marker>
+
+                        );
+                    })}
 
                     {userPos && (
-                        <Marker position={[userPos.lat, userPos.lng]} icon={userIcon}>
-                            <Popup>User Position</Popup>
-                        </Marker>
+                        <>
+                            {/* Accuracy-Circle */}
+                            {userPos.accuracy && (
+                                <Circle
+                                    center={[userPos.lat, userPos.lng]}
+                                    radius={userPos.accuracy}
+                                    pathOptions={{
+                                        color: "#1a73e8",
+                                        weight: 1,
+                                        opacity: 0.9,
+                                        fillColor: "#1a73e8",
+                                        fillOpacity: 0.15
+                                    }}
+                                />
+                            )}
+
+                            {/* User-Icon */}
+                            <Marker
+                                position={[userPos.lat, userPos.lng]}
+                                icon={userIcon}
+                            >
+                                <Popup>
+                                    You are within {Math.round(userPos.accuracy)} meters from this point
+                                </Popup>
+                            </Marker>
+                        </>
                     )}
+
 
                     {/* Current Bus Position */}
                     <Marker position={[currentPos.lat, currentPos.lng]} icon={markerIcon}>
@@ -220,9 +300,20 @@ const MapScreen = () => {
                         </Popup>
                     </Marker>
 
-                    {/* Route Lines - support multiple routes (e.g., outbound and return) */}
-                    {bus.routeGeometries ? (
-                        // Multiple routes (don't connect them)
+                    {/* Route */}
+                    {bus.id === 4 && route1407GeoJson ? (
+                        <GeoJSON
+                            data={route1407GeoJson}
+                            pointToLayer={() => null}
+                            style={(feature) => {
+                                const t = feature?.geometry?.type;
+                                if (t === "LineString" || t === "MultiLineString") {
+                                    return { color: bus.color, weight: 4, opacity: 0.7 };
+                                }
+                                return {};
+                            }}
+                        />
+                    ) : bus.routeGeometries ? (
                         bus.routeGeometries.map((geometry, idx) => (
                             <Polyline
                                 key={idx}
@@ -233,7 +324,6 @@ const MapScreen = () => {
                             />
                         ))
                     ) : (
-                        // Single route or fallback to stops
                         <Polyline
                             positions={bus.routeGeometry || bus.stops.map(s => [s.lat, s.lng])}
                             color={bus.color}
