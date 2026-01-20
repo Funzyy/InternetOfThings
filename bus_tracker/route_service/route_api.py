@@ -1,8 +1,6 @@
-import route_calculation
+from .route_calculation import get_api_gps_data
 import requests
 import heapq
-
-#print(route_calculation.get_api_gps_data(2, 2))
 
 ors_api_key = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkYTMzMzUzNGQ5ZTQyNWQ5YjY3MzYxYjJiN2IxMzRjIiwiaCI6Im11cm11cjY0In0="
 ors_api_url_bus = "https://api.openrouteservice.org/v2/matrix/driving-hgv"
@@ -52,7 +50,7 @@ def get_possible_routes():
     if not header:
         return print("header null"), None
 
-    gps_data = route_calculation.get_api_gps_data(2, 2)
+    gps_data = get_api_gps_data(2, 2)
     if not gps_data:
         return print("GPS data null"), None
 
