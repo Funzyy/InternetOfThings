@@ -7,7 +7,7 @@ import './MapScreen.css';
 import L from 'leaflet';
 import BusWorker from '../workers/busSimulation.worker.js?worker';
 import busCsvUrl from '../data/busFahrt_1407_2026-01-12.csv?url';
-import route1407GeoJsonUrl from '../data/map.geojson?url';
+import route1407GeoJsonUrl from '../data/route1407.geojson?url';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
