@@ -1,3 +1,4 @@
+from random import random, randrange
 from .route_calculation import get_api_gps_data
 import requests
 import heapq
@@ -45,14 +46,10 @@ def api_call_geojson(route):
     print("Dumping plain text response:", response.text)
     return response.json()
 
-def get_possible_routes():
+def get_possible_routes(gps_data):
     header = build_header()
     if not header:
         return print("header null"), None
-
-    gps_data = get_api_gps_data(2, 2)
-    if not gps_data:
-        return print("GPS data null"), None
 
     next_stops = gps_data["next_stops"][:max_stops]
 
@@ -109,12 +106,25 @@ def get_possible_routes():
     print("possible routes:", possible_routes)
     return possible_routes if possible_routes else None
 
-def get_geojson_route_details():
+def get_geojson_route_details(index_number, **kwargs):
+    if index_number != 4:
+        gps_data = get_api_gps_data(index_number, index_number)
+        if not gps_data:
+            return print("GPS data null"), None
+
+    if index_number == 4:
+        random_number = randrange(3)
+        gps_data = get_api_gps_data(random_number, random_number) # pickes random bus gps data
+        if not gps_data:
+            return print("GPS data null"), None
+        gps_data["person"]["lat"] = kwargs["lat"]
+        gps_data["person"]["lon"] = kwargs["lon"]
+
     routes_geoJson = {
         "type": "FeatureCollection",
         "features": [],
     }
-    possible_routes = get_possible_routes()
+    possible_routes = get_possible_routes(gps_data)
     if not possible_routes:
         return None
 
